@@ -24,10 +24,12 @@
     <!-- 引入配置文件 -->
     <bean id="propertyConfigurer"
           class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="order" value="1"/>
         <property name="locations">
             <list>
                 <value>classpath:resources/jdbc.properties</value>
                 <value>classpath:resources/redis.properties</value>
+                <value>classpath:resources/memcached.properties</value>
             </list>
         </property>
     </bean>
@@ -96,7 +98,6 @@
      <property name="database" value="${redis.dbIndex}" />
     <property name="poolConfig" ref="poolConfig" />
    </bean>
-
     <!-- 配置RedisTemplate-->
     <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
         <property name="connectionFactory" ref="jedisConnectionFactory" />
@@ -123,4 +124,35 @@
 
     <!-- redis config end -->
 
+    <!-- Memcached配置 -->
+    <bean id="memcachedPool" class="com.danga.MemCached.SockIOPool"
+          factory-method="getInstance" init-method="initialize" destroy-method="shutDown">
+        <constructor-arg>
+            <value>memcachedPool</value>
+        </constructor-arg>
+        <property name="servers">
+            <!-- ${memcached.server} -->
+            <list>
+                <value>${memcached.server1}:${memcached.port1}</value>
+            </list>
+        </property>
+        <property name="initConn">
+            <value>${memcached.initConn}</value>
+        </property>
+        <property name="minConn">
+            <value>${memcached.minConn}</value>
+        </property>
+        <property name="maxConn">
+            <value>${memcached.maxConn}</value>
+        </property>
+        <property name="maintSleep">
+            <value>${memcached.maintSleep}</value>
+        </property>
+        <property name="nagle">
+            <value>${memcached.nagle}</value>
+        </property>
+        <property name="socketTO">
+            <value>${memcached.socketTO}</value>
+        </property>
+    </bean>
 </beans>
