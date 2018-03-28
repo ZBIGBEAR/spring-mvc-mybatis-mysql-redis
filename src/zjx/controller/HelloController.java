@@ -26,55 +26,41 @@ public class HelloController {
     public ModelAndView  hello(int id) {
         ModelAndView mv = new ModelAndView();
         mv.setViewName("hello");
-        mv.addObject("msg","welcome,world");
+        //从redis中获取当前ID对应的对象
         HelloEntry hello = (HelloEntry) redisService.get(id+"");
+        //如果不存在，则从数据库中获取
         if(hello==null) {
             hello = helloService.getOneById(id);
+            //将当前对象存到redis
+            redisService.set(id+"",hello);
         }
-
+        //将当前ID保存到redis
+        redisService.set("id",id);
         mv.addObject("hello",hello);
-        redisService.set("curId",id);
-        redisService.set(id+"",hello);
         return mv;
     }
-    @RequestMapping(value = "hello1")
-    public ModelAndView  hello1() {
-        ModelAndView mv = new ModelAndView();
-        mv.setViewName("hello");
-        Object id = redisService.get("curId");
-        if(id!=null) {
-            HelloEntry hello = (HelloEntry) redisService.get(id.toString());
-            if(hello!=null) {
-                mv.addObject("msg", hello.getName());
-                mv.addObject("hello", hello);
-            }
-        }
-        return mv;
-    }
-    @RequestMapping(value="testMemCached")
-    private ModelAndView memCached(){
+    @RequestMapping(value = "testMemCached")
+    public ModelAndView  memCached() {
         ModelAndView mv = new ModelAndView();
         mv.setViewName("memCached");
-        //从memcached中获取姓名
-        Object name =memCachedService.get("name");
-        String id = redisService.get("curId").toString();
-        HelloEntry hello = (HelloEntry)memCachedService.get(id.toString());
-        if(hello==null){
-            hello = (HelloEntry) redisService.get(id.toString());
-            if (hello == null) {
-                hello = helloService.getOneById(Integer.parseInt(id.toString()));
+        Object id = redisService.get("id");
+        String curId="1";
+        if(id==null || "".equals(id)){
+            curId="1";
+        }else{
+            curId = id.toString();
+        }
+        //先从memcached中获取当前ID对应的对象
+        HelloEntry hello = (HelloEntry)memCachedService.get(curId);
+        if(hello==null){//如果memchaed中没有，则从redis中获取
+            hello = (HelloEntry) redisService.get(curId);
+            if (hello == null) {//如果redis中没有则从数据库中获取
+                hello = helloService.getOneById(Integer.parseInt(curId));
+                redisService.set(curId,hello);//保存到redis
             }
-            memCachedService.set(id,hello);
-            mv.addObject("hello",null);
-        }else{
-            mv.addObject("hello",hello);
+            memCachedService.set(curId,hello);//保存到memcached
         }
-        if(name==null){
-            mv.addObject("name","测试String：memcached为空");
-            memCachedService.set("name",hello.getName());
-        }else{
-            mv.addObject("name","测试String："+name.toString());
-        }
+        mv.addObject("hello",hello);
         return mv;
     }
 }
